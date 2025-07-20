@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  derp-acme:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: derp-acme
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3478:3478/udp"
+    volumes:
+      - certs:/app/certs
+      - acme_data:/root/.acme.sh
+    environment:
+      # DERP Server Configuration
+      - DERP_DOMAIN=${DERP_DOMAIN:-your-domain.com}
+      - DERP_CERT_DIR=/app/certs
+      - DERP_ADDR=${DERP_ADDR:-:443}
+      - DERP_HTTP_PORT=${DERP_HTTP_PORT:-80}
+      - DERP_STUN=${DERP_STUN:-true}
+      - DERP_STUN_PORT=${DERP_STUN_PORT:-3478}
+      - DERP_VERIFY_CLIENTS=${DERP_VERIFY_CLIENTS:-false}
+      
+      # ACME Configuration
+      - ACME_ENABLED=${ACME_ENABLED:-false}
+      - ACME_EMAIL=${ACME_EMAIL:-your-email@example.com}
+      - ACME_DNS_PROVIDER=${ACME_DNS_PROVIDER:-cf}
+      
+      # Cloudflare DNS Provider
+      - CF_Token=${CF_Token:-}
+      
+      # Aliyun DNS Provider
+      - Ali_Key=${Ali_Key:-}
+      - Ali_Secret=${Ali_Secret:-}
+      
+      # DNSPod DNS Provider
+      - DP_Id=${DP_Id:-}
+      - DP_Key=${DP_Key:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${DERP_HTTP_PORT:-80}/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - derp_network
+
+volumes:
+  certs:
+    driver: local
+  acme_data:
+    driver: local
+
+networks:
+  derp_network:
+    driver: bridge
