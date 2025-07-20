@@ -3,7 +3,7 @@ FROM golang:latest AS builder
 # Install derper
 RUN go install tailscale.com/cmd/derper@main
 
-FROM ubuntu:20.04
+FROM ubuntu
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
@@ -18,8 +18,8 @@ COPY --from=builder /go/bin/derper /usr/local/bin/derper
 # Install acme.sh for certificate management
 RUN curl https://get.acme.sh | sh
 
-# Create app directory and certs directory
-RUN mkdir -p /app/certs
+# Create acme directory
+RUN mkdir -p /app/acme
 
 # Copy certificate management script
 COPY acme-manager.sh /app/acme-manager.sh
@@ -42,7 +42,6 @@ ENV ACME_ENABLED=false
 ENV ACME_EMAIL=your-email@example.com
 ENV ACME_DNS_PROVIDER=cf
 ENV ACME_HOME=/app/acme
-ENV CF_Token=""
 
 # Expose ports
 EXPOSE 443 80 3478/udp

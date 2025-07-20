@@ -9,8 +9,8 @@ CERT_DIR="${DERPER_CERT_DIR:-/app/acme/derper}"
 ACME_HOME="${ACME_HOME:-/app/acme}"
 ACME_SH="${ACME_HOME}/acme.sh"
 
-if [ ! -d ${ACME_HOME} ]; then
-    cp -rf $HOME/.acme ${ACME_HOME}
+if [ ! -f ${ACME_SH} ]; then
+    cp -rf $HOME/.acme.sh/* ${ACME_HOME}
 fi
 
 # Create certs directory if it doesn't exist
