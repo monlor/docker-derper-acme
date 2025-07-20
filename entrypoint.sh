@@ -26,35 +26,35 @@ DERPER_ARGS=""
 DERPER_ARGS="${DERPER_ARGS} -certmode=manual"
 
 # Set certificate directory
-if [ -n "${DERP_CERT_DIR}" ]; then
-    DERPER_ARGS="${DERPER_ARGS} -certdir=${DERP_CERT_DIR}"
+if [ -n "${DERPER_CERT_DIR}" ]; then
+    DERPER_ARGS="${DERPER_ARGS} -certdir=${DERPER_CERT_DIR}"
 fi
 
 # Set domain
-if [ -n "${DERP_DOMAIN}" ]; then
-    DERPER_ARGS="${DERPER_ARGS} -hostname=${DERP_DOMAIN}"
+if [ -n "${DERPER_DOMAIN}" ]; then
+    DERPER_ARGS="${DERPER_ARGS} -hostname=${DERPER_DOMAIN}"
 fi
 
 # Set address
-if [ -n "${DERP_ADDR}" ]; then
-    DERPER_ARGS="${DERPER_ARGS} -a=${DERP_ADDR}"
+if [ -n "${DERPER_ADDR}" ]; then
+    DERPER_ARGS="${DERPER_ARGS} -a=${DERPER_ADDR}"
 fi
 
 # Set HTTP port
-if [ -n "${DERP_HTTP_PORT}" ]; then
-    DERPER_ARGS="${DERPER_ARGS} -http-port=${DERP_HTTP_PORT}"
+if [ -n "${DERPER_HTTP_PORT}" ]; then
+    DERPER_ARGS="${DERPER_ARGS} -http-port=${DERPER_HTTP_PORT}"
 fi
 
 # Enable/disable STUN
-if [ "${DERP_STUN}" = "true" ]; then
+if [ "${DERPER_STUN}" = "true" ]; then
     DERPER_ARGS="${DERPER_ARGS} -stun"
-    if [ -n "${DERP_STUN_PORT}" ]; then
-        DERPER_ARGS="${DERPER_ARGS} -stun-port=${DERP_STUN_PORT}"
+    if [ -n "${DERPER_STUN_PORT}" ]; then
+        DERPER_ARGS="${DERPER_ARGS} -stun-port=${DERPER_STUN_PORT}"
     fi
 fi
 
 # Client verification
-if [ "${DERP_VERIFY_CLIENTS}" = "true" ]; then
+if [ "${DERPER_VERIFY_CLIENTS}" = "true" ]; then
     DERPER_ARGS="${DERPER_ARGS} -verify-clients"
 fi
 

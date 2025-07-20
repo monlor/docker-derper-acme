@@ -1,10 +1,10 @@
-# Docker DERP with ACME
+# Docker DERPER with ACME
 
-A Docker service that runs Tailscale DERP server with automatic ACME certificate management.
+A Docker service that runs Tailscale DERPER server with automatic ACME certificate management.
 
 ## Features
 
-- Tailscale DERP server with manual certificate mode
+- Tailscale DERPER server with manual certificate mode
 - Automatic SSL certificate generation using ACME
 - Support for multiple DNS providers (Cloudflare, Aliyun, DNSPod)
 - Certificate auto-renewal with cron jobs
@@ -21,7 +21,7 @@ cp .env.example .env
 2. Edit `.env` with your configuration:
 ```bash
 # Required settings
-DERP_DOMAIN=your-domain.com
+DERPER_DOMAIN=your-domain.com
 ACME_ENABLED=true
 ACME_EMAIL=your-email@example.com
 
@@ -37,17 +37,17 @@ docker-compose up -d
 
 ## Configuration
 
-### DERP Server Settings
+### DERPER Server Settings
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DERP_DOMAIN` | `your-domain.com` | Domain name for the DERP server |
-| `DERP_CERT_DIR` | `/app/certs` | Certificate directory |
-| `DERP_ADDR` | `:443` | HTTPS listen address |
-| `DERP_HTTP_PORT` | `80` | HTTP port |
-| `DERP_STUN` | `true` | Enable STUN server |
-| `DERP_STUN_PORT` | `3478` | STUN port |
-| `DERP_VERIFY_CLIENTS` | `false` | Verify Tailscale clients |
+| `DERPER_DOMAIN` | `your-domain.com` | Domain name for the DERPER server |
+| `DERPER_CERT_DIR` | `/app/acme/derper` | Certificate directory |
+| `DERPER_ADDR` | `:443` | HTTPS listen address |
+| `DERPER_HTTP_PORT` | `80` | HTTP port |
+| `DERPER_STUN` | `true` | Enable STUN server |
+| `DERPER_STUN_PORT` | `3478` | STUN port |
+| `DERPER_VERIFY_CLIENTS` | `false` | Verify Tailscale clients |
 
 ### ACME Settings
 
@@ -98,21 +98,21 @@ See [acme.sh DNS providers list](https://github.com/acmesh-official/acme.sh/wiki
 
 ## Certificate Management
 
-- Certificates are generated to `/app/certs/` as `{domain}.crt` and `{domain}.key`
-- DERP server is configured to use manual certificate mode
+- Certificates are generated to `/app/acme/derper/` as `{domain}.crt` and `{domain}.key`
+- DERPER server is configured to use manual certificate mode
+- ACME data is stored in `/app/acme/`
 - Automatic renewal runs daily at 2 AM via cron
 - Self-signed certificates are generated as fallback
 
 ## Ports
 
-- `443/tcp` - HTTPS (DERP server)
+- `443/tcp` - HTTPS (DERPER server)
 - `80/tcp` - HTTP (status/health)
 - `3478/udp` - STUN server
 
 ## Volume Mounts
 
-- `certs` - Certificate storage
-- `acme_data` - ACME client data and account info
+- `app_data:/app/acme` - ACME data and certificate storage (unified storage)
 
 ## Health Check
 
@@ -122,13 +122,13 @@ The service includes a health check that verifies the HTTP endpoint is respondin
 
 View logs with:
 ```bash
-docker-compose logs -f derp-acme
+docker-compose logs -f derper
 ```
 
 ## Building
 
 ```bash
-docker build -t derp-acme .
+docker build -t derper-acme .
 ```
 
 ## Security Notes

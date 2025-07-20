@@ -1,10 +1,10 @@
-# Docker DERP with ACME - Claude.md
+# Docker DERPER with ACME - Claude.md
 
 ## Project Overview
 
-This project implements a Docker service that runs Tailscale DERP server with automatic ACME certificate management. The service combines:
+This project implements a Docker service that runs Tailscale DERPER server with automatic ACME certificate management. The service combines:
 
-- **Tailscale DERP server** - For secure relay connections
+- **Tailscale DERPER server** - For secure relay connections
 - **ACME certificate management** - Automatic SSL/TLS certificate issuance and renewal
 - **Multiple DNS provider support** - Compatible with 200+ DNS providers via acme.sh
 - **Fallback mechanisms** - Self-signed certificates when ACME fails
@@ -14,9 +14,9 @@ This project implements a Docker service that runs Tailscale DERP server with au
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   acme.sh       │    │   DERP Server   │    │   Certificate   │
+│   acme.sh       │    │  DERPER Server  │    │   Certificate   │
 │   DNS Challenge │────▶   Manual Mode    │────▶   Storage      │
-│   Auto-renewal  │    │   Port 443/80   │    │   /app/certs    │
+│   Auto-renewal  │    │   Port 443/80   │    │ /app/acme/derper│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -29,8 +29,8 @@ This project implements a Docker service that runs Tailscale DERP server with au
 - Handles certificate renewal via cron jobs
 
 ### 2. Service Orchestration (`entrypoint.sh`)
-- Generates certificates before starting DERP
-- Configures DERP server with manual certificate mode
+- Generates certificates before starting DERPER
+- Configures DERPER server with manual certificate mode
 - Sets up automatic renewal cron jobs
 - Manages service lifecycle
 
@@ -44,7 +44,7 @@ This project implements a Docker service that runs Tailscale DERP server with au
 
 ### Build
 ```bash
-docker build -t derp-acme .
+docker build -t derper-acme .
 ```
 
 ### Test Certificate Generation
@@ -67,24 +67,25 @@ docker-compose up -d
 ## Configuration
 
 ### Required Environment Variables
-- `DERP_DOMAIN` - Domain name for the DERP server
+- `DERPER_DOMAIN` - Domain name for the DERPER server
 - `ACME_EMAIL` - Email for ACME registration (if ACME enabled)
 
 ### ACME Configuration
 - `ACME_ENABLED` - Enable/disable ACME certificate management
 - `ACME_DNS_PROVIDER` - DNS provider code (cf, ali, dp, aws, etc.)
+- `ACME_HOME` - ACME data directory (/app/acme)
 - Provider-specific credentials (CF_Token, Ali_Key, etc.)
 
-### DERP Server Settings
-- `DERP_CERT_DIR` - Certificate directory (/app/certs)
-- `DERP_ADDR` - HTTPS listen address (:443)
-- `DERP_HTTP_PORT` - HTTP port (80)
-- `DERP_STUN` - Enable STUN server (true)
+### DERPER Server Settings
+- `DERPER_CERT_DIR` - Certificate directory (/app/acme/derper)
+- `DERPER_ADDR` - HTTPS listen address (:443)
+- `DERPER_HTTP_PORT` - HTTP port (80)
+- `DERPER_STUN` - Enable STUN server (true)
 
 ## File Structure
 
 ```
-docker-derp-acme/
+docker-derper-acme/
 ├── Dockerfile              # Container build configuration
 ├── docker-compose.yml      # Service orchestration
 ├── acme-manager.sh         # Certificate management script
@@ -100,10 +101,11 @@ docker-derp-acme/
 ## Security Considerations
 
 - Certificates stored with proper permissions (644 for .crt, 600 for .key)
-- DERP server runs in manual certificate mode for security
+- DERPER server runs in manual certificate mode for security
 - Self-signed fallback prevents service failure
 - DNS provider credentials passed via environment variables
 - Container runs with minimal privileges
+- Unified storage in `/app/acme` simplifies volume management
 
 ## DNS Provider Support
 
@@ -127,25 +129,25 @@ See [acme.sh DNS API documentation](https://github.com/acmesh-official/acme.sh/w
 3. Confirm domain DNS settings
 4. Review certificate file permissions
 
-### DERP Server Issues
+### DERPER Server Issues
 1. Check port availability (443, 80, 3478)
 2. Verify certificate files exist
-3. Review DERP configuration parameters
+3. Review DERPER configuration parameters
 4. Check container networking
 
 ### Common Commands
 ```bash
 # View logs
-docker-compose logs -f derp-acme
+docker-compose logs -f derper
 
 # Check certificate status
-docker exec derp-acme openssl x509 -in /app/certs/yourdomain.crt -text -noout
+docker exec derper openssl x509 -in /app/acme/derper/yourdomain.crt -text -noout
 
 # Manual certificate renewal
-docker exec derp-acme /app/acme-manager.sh renew
+docker exec derper /app/acme-manager.sh renew
 
 # Restart service
-docker-compose restart derp-acme
+docker-compose restart derper
 ```
 
 ## Development Notes

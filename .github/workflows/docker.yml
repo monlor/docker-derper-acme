@@ -21,7 +21,7 @@ env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.actor }}/derp-acme
+  IMAGE_NAME: ${{ github.actor }}/derper-acme
   # platform
   PLATFORM: linux/amd64,linux/arm64
   WORK_DIR: .
@@ -56,7 +56,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Cache Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-${{ github.sha }}

@@ -5,8 +5,8 @@ set -e
 # ACME certificate management script
 # Supports multiple DNS providers with Cloudflare as default
 
-CERT_DIR="${DERP_CERT_DIR:-/app/certs}"
-ACME_HOME="${ACME_HOME:-$HOME/.acme.sh}"
+CERT_DIR="${DERPER_CERT_DIR:-/app/acme/derper}"
+ACME_HOME="${ACME_HOME:-/app/acme}"
 ACME_SH="${ACME_HOME}/acme.sh"
 
 # Create certs directory if it doesn't exist
@@ -22,8 +22,8 @@ check_acme_config() {
         return 1
     fi
 
-    if [ -z "${DERP_DOMAIN}" ]; then
-        log "ERROR: DERP_DOMAIN is required when ACME is enabled"
+    if [ -z "${DERPER_DOMAIN}" ]; then
+        log "ERROR: DERPER_DOMAIN is required when ACME is enabled"
         return 1
     fi
 
@@ -99,18 +99,18 @@ main() {
         "issue")
             if ! check_acme_config; then
                 # Check if we at least have a domain for self-signed cert
-                if [ -z "${DERP_DOMAIN}" ]; then
-                    log "ERROR: DERP_DOMAIN is required for certificate generation"
+                if [ -z "${DERPER_DOMAIN}" ]; then
+                    log "ERROR: DERPER_DOMAIN is required for certificate generation"
                     exit 1
                 fi
                 log "ACME not configured, generating self-signed certificate"
-                generate_self_signed "${DERP_DOMAIN}"
+                generate_self_signed "${DERPER_DOMAIN}"
                 exit 0
             fi
             
-            if ! issue_certificate "${DERP_DOMAIN}"; then
+            if ! issue_certificate "${DERPER_DOMAIN}"; then
                 log "Certificate issuance failed, generating self-signed certificate"
-                generate_self_signed "${DERP_DOMAIN}"
+                generate_self_signed "${DERPER_DOMAIN}"
                 exit 1
             fi
             ;;

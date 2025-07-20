@@ -31,19 +31,20 @@ COPY entrypoint.sh /app/entrypoint.sh
 # Make scripts executable
 RUN chmod +x /app/acme-manager.sh /app/entrypoint.sh
 
-# Environment variables for derp
-ENV DERP_DOMAIN=
-ENV DERP_CERT_DIR=/app/certs
-ENV DERP_ADDR=:443
-ENV DERP_HTTP_PORT=80
-ENV DERP_STUN=true
-ENV DERP_STUN_PORT=3478
-ENV DERP_VERIFY_CLIENTS=false
+# Environment variables for derper
+ENV DERPER_DOMAIN=
+ENV DERPER_CERT_DIR=/app/acme/derper
+ENV DERPER_ADDR=:443
+ENV DERPER_HTTP_PORT=80
+ENV DERPER_STUN=true
+ENV DERPER_STUN_PORT=3478
+ENV DERPER_VERIFY_CLIENTS=false
 
 # Environment variables for ACME
 ENV ACME_ENABLED=false
 ENV ACME_EMAIL=your-email@example.com
 ENV ACME_DNS_PROVIDER=cf
+ENV ACME_HOME=/app/acme
 ENV CF_Token=""
 
 # Expose ports
