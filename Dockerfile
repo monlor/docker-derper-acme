@@ -3,9 +3,6 @@ FROM golang:latest AS builder
 # Install derper
 RUN go install tailscale.com/cmd/derper@main
 
-# Install acme.sh for certificate management
-RUN curl https://get.acme.sh | sh
-
 FROM ubuntu:20.04
 
 # Install necessary packages
@@ -18,8 +15,8 @@ RUN apt-get update && apt-get install -y \
 # Copy derper binary from builder
 COPY --from=builder /go/bin/derper /usr/local/bin/derper
 
-# Copy acme.sh from builder
-COPY --from=builder /root/.acme.sh /root/.acme.sh
+# Install acme.sh for certificate management
+RUN curl https://get.acme.sh | sh
 
 # Create app directory and certs directory
 RUN mkdir -p /app/certs
