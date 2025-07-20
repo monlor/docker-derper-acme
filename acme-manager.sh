@@ -50,6 +50,7 @@ issue_certificate() {
     # Issue certificate using acme.sh with DNS provider
     log "Using DNS provider: ${ACME_DNS_PROVIDER}"
     "${ACME_SH}" --issue \
+        --home "${ACME_HOME}" \
         -d "${domain}" \
         --dns "dns_${ACME_DNS_PROVIDER}" \
         --accountemail "${ACME_EMAIL}" \
@@ -57,6 +58,7 @@ issue_certificate() {
     
     # Install certificate to our certs directory
     "${ACME_SH}" --install-cert \
+        --home "${ACME_HOME}" \
         -d "${domain}" \
         --cert-file "${cert_file}" \
         --key-file "${key_file}" \
