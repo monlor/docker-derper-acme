@@ -189,8 +189,8 @@ schedule_expiry_restart() {
 
     log "Cron expression: ${cron_expression}"
 
-    # Add to crontab
-    (crontab -l 2>/dev/null | grep -v "pkill -TERM derper"; echo "${cron_expression}") | crontab -
+    # Set crontab with only the restart job (replaces any existing crontab)
+    echo "${cron_expression}" | crontab -
 
     log "Successfully scheduled restart job via cron"
     return 0
