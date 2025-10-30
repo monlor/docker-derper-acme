@@ -22,21 +22,39 @@ This project implements a Docker service that runs Tailscale DERPER server with 
 
 ## Key Components
 
-### 1. Certificate Management (`acme-manager.sh`)
-- Issues certificates via ACME DNS challenges
+### 1. Certificate Management (`cert-manager.sh`)
+- **Two distinct commands**:
+  - **`auto` command**: ACME certificate management
+    - Initializes ACME environment
+    - Checks certificate validity (30-day threshold)
+    - Issues/renews certificates via ACME DNS challenges with `--force` flag
+    - Auto-restarts DERPER after successful issuance (if running)
+    - No fallback to self-signed certificates
+  - **`manual` command**: User-provided certificate management
+    - Verifies certificate files exist (`.crt` and `.key`)
+    - Reads certificate expiry date
+    - Schedules one-time cron job for restart 1 day before expiry
+    - No ACME dependencies
 - Supports all acme.sh DNS providers using `--dns dns_${PROVIDER}` format
-- Generates self-signed certificates as fallback
-- Handles certificate renewal via cron jobs
+- Clear separation between auto and manual logic
 
 ### 2. Service Orchestration (`entrypoint.sh`)
-- Generates certificates before starting DERPER
-- Configures DERPER server with manual certificate mode
-- Sets up automatic renewal cron jobs
-- Manages service lifecycle
+- Routes to correct cert-manager command based on `CERT_MODE`
+- **Auto mode**:
+  - Runs `cert-manager.sh auto` on startup
+  - Sets up daily cron job at 2 AM: `cert-manager.sh auto`
+  - Handles certificate issuance and renewal automatically
+- **Manual mode**:
+  - Runs `cert-manager.sh manual` on startup
+  - Verifies certificate files exist
+  - Schedules one-time restart before expiry
+- Starts cron daemon for both modes
+- Configures DERPER server parameters
 
 ### 3. Container Configuration (`Dockerfile`)
 - Multi-stage build with golang and ubuntu
 - Installs derper binary and acme.sh client
+- Installs cron for scheduled task management
 - Sets up proper directory structure and permissions
 - Configures environment variables
 
@@ -58,20 +76,49 @@ docker build -t derper-acme .
 ```
 
 ### Deploy
+
+### Option 1: Automatic ACME Certificates (Default)
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your ACME configuration
 docker-compose up -d
 ```
+
+### Option 2: Manual Certificates (User-Provided)
+```bash
+cp .env.example .env
+# Edit .env and set CERT_MODE=manual
+# CERT_MODE=manual
+
+# Create certificate directory
+mkdir -p certs
+
+# Copy your certificates (must match DERPER_DOMAIN)
+cp your-domain.crt certs/your-domain.com.crt
+cp your-domain.key certs/your-domain.com.key
+
+# Update docker-compose.yml to mount certificates
+# Add under volumes:
+#   - ./certs:/app/acme/derper:ro
+
+docker-compose up -d
+```
+
+**Important for manual mode:**
+- Certificate files must be named: `${DERPER_DOMAIN}.crt` and `${DERPER_DOMAIN}.key`
+- Container will automatically restart 1 day before certificate expiry
+- Replace certificates by updating files and restarting container
 
 ## Configuration
 
 ### Required Environment Variables
 - `DERPER_DOMAIN` - Domain name for the DERPER server
-- `ACME_EMAIL` - Email for ACME registration (if ACME enabled)
 
-### ACME Configuration
-- `ACME_ENABLED` - Enable/disable ACME certificate management
+### Certificate Configuration
+- `CERT_MODE` - Certificate mode: `auto` (automatic ACME) or `manual` (user-provided)
+  - **auto mode**: Automatically issue and renew certificates via ACME
+  - **manual mode**: Use user-provided certificates, auto-restart before expiry
+- `ACME_EMAIL` - Email for ACME registration (required for auto mode)
 - `ACME_DNS_PROVIDER` - DNS provider code (cf, ali, dp, aws, etc.)
 - `ACME_HOME` - ACME data directory (/app/acme)
 - Provider-specific credentials (CF_Token, Ali_Key, etc.)
@@ -88,7 +135,7 @@ docker-compose up -d
 docker-derper-acme/
 ├── Dockerfile              # Container build configuration
 ├── docker-compose.yml      # Service orchestration
-├── acme-manager.sh         # Certificate management script
+├── cert-manager.sh         # Certificate management script (auto/manual commands)
 ├── entrypoint.sh          # Service startup script
 ├── .env.example           # Environment configuration template
 ├── README.md              # User documentation
@@ -128,12 +175,14 @@ See [acme.sh DNS API documentation](https://github.com/acmesh-official/acme.sh/w
 2. Verify DNS provider credentials
 3. Confirm domain DNS settings
 4. Review certificate file permissions
+5. **Note:** No self-signed fallback - ACME must succeed or service will fail
 
 ### DERPER Server Issues
 1. Check port availability (443, 80, 3478)
 2. Verify certificate files exist
 3. Review DERPER configuration parameters
 4. Check container networking
+5. If container fails to start, check certificate issuance logs
 
 ### Common Commands
 ```bash
@@ -143,8 +192,18 @@ docker-compose logs -f derper
 # Check certificate status
 docker exec derper openssl x509 -in /app/acme/derper/yourdomain.crt -text -noout
 
-# Manual certificate renewal
-docker exec derper /app/acme-manager.sh renew
+# Check certificate expiry date
+docker exec derper openssl x509 -enddate -noout -in /app/acme/derper/yourdomain.crt
+
+# Run certificate management manually
+# For auto mode: check and renew if needed
+docker exec derper /app/cert-manager.sh auto
+
+# For manual mode: verify certificates and reschedule restart
+docker exec derper /app/cert-manager.sh manual
+
+# Check scheduled jobs
+docker exec derper crontab -l
 
 # Restart service
 docker-compose restart derper
@@ -153,15 +212,18 @@ docker-compose restart derper
 ## Development Notes
 
 - The project uses simplified DNS provider configuration
-- ACME functionality can be disabled for testing
-- Self-signed certificates ensure service availability
-- Certificate renewal runs daily at 2 AM via cron
+- ACME functionality is required in auto mode - no self-signed fallback
+- **Auto mode**: Certificate check runs daily at 2 AM via cron
+- **Manual mode**: One-time restart scheduled using cron, 1 day before certificate expiry
+- Only issues new certificates when expiring within 30 days
+- Auto-restart on certificate renewal (only if derper is running)
 - Health checks verify HTTP endpoint availability
+- Manual certificates support wildcard certs and enterprise PKI
+- Scheduled tasks can be viewed with `crontab -l` command (manual mode)
 
 ## Future Enhancements
 
 - Support for multiple domains
 - Integration with external certificate stores
 - Monitoring and alerting for certificate expiry
-- Support for HTTP-01 challenges as fallback
 - Automated backup of certificate data
