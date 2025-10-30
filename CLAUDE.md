@@ -128,6 +128,10 @@ docker-compose up -d
 - `DERPER_ADDR` - HTTPS listen address (:443)
 - `DERPER_HTTP_PORT` - HTTP port (80)
 - `DERPER_STUN` - Enable STUN server (true)
+- `DERPER_STUN_PORT` - STUN port (3478)
+- `DERPER_VERIFY_CLIENTS` - Enable client verification (false)
+- `DERPER_VERIFY_CLIENT_URL` - Client verification URL (optional)
+- `DERPER_EXTRA_ARGS` - Additional derper command-line arguments (optional)
 
 ## File Structure
 

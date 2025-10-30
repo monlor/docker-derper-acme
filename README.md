@@ -82,6 +82,8 @@ docker-compose up -d
 | `DERPER_STUN` | `true` | Enable STUN server |
 | `DERPER_STUN_PORT` | `3478` | STUN port |
 | `DERPER_VERIFY_CLIENTS` | `false` | Verify Tailscale clients |
+| `DERPER_VERIFY_CLIENT_URL` | - | URL for client verification (optional) |
+| `DERPER_EXTRA_ARGS` | - | Additional derper arguments (optional) |
 
 ### ACME Settings
 
@@ -129,6 +131,29 @@ ACME_DNS_PROVIDER=namecheap  # Namecheap
 ```
 
 See [acme.sh DNS providers list](https://github.com/acmesh-official/acme.sh/wiki/dnsapi) for all supported providers and required environment variables.
+
+## Advanced Configuration
+
+### Client Verification
+
+To enable client verification with a custom URL:
+
+```bash
+DERPER_VERIFY_CLIENTS=true
+DERPER_VERIFY_CLIENT_URL=https://your-auth-server.com/verify
+```
+
+### Custom DERPER Arguments
+
+For any additional derper parameters not covered by specific environment variables, use `DERPER_EXTRA_ARGS`:
+
+```bash
+# Example: Enable mesh peering with another DERPER server
+DERPER_EXTRA_ARGS="-mesh-with=https://other-derper.com"
+
+# Example: Multiple arguments
+DERPER_EXTRA_ARGS="-mesh-with=https://derp1.example.com -bootstrap-dns-names=derp1.example.com,derp2.example.com"
+```
 
 ## Certificate Management
 
