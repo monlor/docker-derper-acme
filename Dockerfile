@@ -22,11 +22,11 @@ RUN curl https://get.acme.sh | sh
 RUN mkdir -p /app/acme
 
 # Copy certificate management script
-COPY acme-manager.sh /app/acme-manager.sh
+COPY cert-manager.sh /app/cert-manager.sh
 COPY entrypoint.sh /app/entrypoint.sh
 
 # Make scripts executable
-RUN chmod +x /app/acme-manager.sh /app/entrypoint.sh
+RUN chmod +x /app/cert-manager.sh /app/entrypoint.sh
 
 # Environment variables for derper
 ENV DERPER_DOMAIN=
@@ -37,8 +37,8 @@ ENV DERPER_STUN=true
 ENV DERPER_STUN_PORT=3478
 ENV DERPER_VERIFY_CLIENTS=false
 
-# Environment variables for ACME
-ENV ACME_ENABLED=false
+# Environment variables for certificate management
+ENV CERT_MODE=auto
 ENV ACME_EMAIL=your-email@example.com
 ENV ACME_DNS_PROVIDER=cf
 ENV ACME_HOME=/app/acme

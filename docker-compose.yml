@@ -18,8 +18,8 @@ services:
       - DERPER_STUN_PORT=${DERPER_STUN_PORT:-3478}
       - DERPER_VERIFY_CLIENTS=${DERPER_VERIFY_CLIENTS:-false}
       
-      # ACME Configuration
-      - ACME_ENABLED=${ACME_ENABLED:-true}
+      # Certificate Configuration
+      - CERT_MODE=${CERT_MODE:-auto}
       - ACME_EMAIL=${ACME_EMAIL:-your-email@example.com}
       - ACME_DNS_PROVIDER=${ACME_DNS_PROVIDER:-cf}
       

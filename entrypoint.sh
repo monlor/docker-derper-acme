@@ -6,15 +6,24 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Generate certificates before starting derper
-log "Starting ACME certificate manager..."
-/app/acme-manager.sh issue
+# Certificate management based on mode
+if [ "${CERT_MODE}" = "manual" ]; then
+    log "Certificate mode: manual"
+    log "Verifying user-provided certificates and scheduling restart..."
+    /app/cert-manager.sh manual
 
-# Set up certificate renewal cron job if ACME is enabled
-if [ "${ACME_ENABLED}" = "true" ]; then
-    log "Setting up certificate renewal cron job"
-    # Run renewal check every day at 2 AM
-    echo "0 2 * * * /app/acme-manager.sh renew" | crontab -
+    # Start cron daemon for scheduled restart
+    log "Starting cron daemon"
+    service cron start
+else
+    log "Certificate mode: auto"
+    log "Checking ACME certificates..."
+    /app/cert-manager.sh auto
+
+    # Set up certificate renewal cron job
+    log "Setting up certificate renewal cron job (daily at 2 AM)"
+    echo "0 2 * * * /app/cert-manager.sh auto" | crontab -
+
     # Start cron daemon
     service cron start
 fi
