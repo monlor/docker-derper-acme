@@ -67,6 +67,16 @@ if [ "${DERPER_VERIFY_CLIENTS}" = "true" ]; then
     DERPER_ARGS="${DERPER_ARGS} -verify-clients"
 fi
 
+# Client verification URL
+if [ -n "${DERPER_VERIFY_CLIENT_URL}" ]; then
+    DERPER_ARGS="${DERPER_ARGS} -verify-client-url=${DERPER_VERIFY_CLIENT_URL}"
+fi
+
+# Extra arguments (for any additional derper parameters)
+if [ -n "${DERPER_EXTRA_ARGS}" ]; then
+    DERPER_ARGS="${DERPER_ARGS} ${DERPER_EXTRA_ARGS}"
+fi
+
 log "Starting derper with arguments: ${DERPER_ARGS}"
 
 # Start derper
