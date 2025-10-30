@@ -5,13 +5,17 @@ A Docker service that runs Tailscale DERPER server with automatic ACME certifica
 ## Features
 
 - Tailscale DERPER server with manual certificate mode
-- Automatic SSL certificate generation using ACME
-- Support for multiple DNS providers (Cloudflare, Aliyun, DNSPod)
-- Certificate auto-renewal with cron jobs
-- Fallback to self-signed certificates if ACME fails
+- **Dual certificate management modes:**
+  - **Auto mode**: Automatic ACME certificate issuance and renewal
+  - **Manual mode**: User-provided certificates with auto-restart before expiry
+- Support for 200+ DNS providers via acme.sh
+- Certificate auto-renewal with intelligent scheduling
+- Automatic service restart on certificate updates
 - Configurable via environment variables
 
 ## Quick Start
+
+### Option 1: Automatic ACME Certificates (Recommended)
 
 1. Copy the environment file:
 ```bash
@@ -22,7 +26,7 @@ cp .env.example .env
 ```bash
 # Required settings
 DERPER_DOMAIN=your-domain.com
-ACME_ENABLED=true
+CERT_MODE=auto
 ACME_EMAIL=your-email@example.com
 
 # For Cloudflare DNS
@@ -34,6 +38,36 @@ CF_Token=your_cloudflare_api_token
 ```bash
 docker-compose up -d
 ```
+
+### Option 2: Manual Certificates (User-Provided)
+
+1. Prepare your certificates:
+```bash
+# Certificate files must be named: ${DERPER_DOMAIN}.crt and ${DERPER_DOMAIN}.key
+mkdir -p certs
+cp your-cert.crt certs/your-domain.com.crt
+cp your-cert.key certs/your-domain.com.key
+```
+
+2. Edit `.env`:
+```bash
+DERPER_DOMAIN=your-domain.com
+CERT_MODE=manual
+```
+
+3. Update `docker-compose.yml` to mount certificates:
+```yaml
+volumes:
+  - app_data:/app/acme
+  - ./certs:/app/acme/derper:ro  # Add this line
+```
+
+4. Start the service:
+```bash
+docker-compose up -d
+```
+
+**Note**: In manual mode, the container will automatically restart 1 day before certificate expiry.
 
 ## Configuration
 
@@ -53,9 +87,9 @@ docker-compose up -d
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ACME_ENABLED` | `false` | Enable ACME certificate management |
-| `ACME_EMAIL` | Required | Email for ACME registration |
-| `ACME_DNS_PROVIDER` | `cf` | DNS provider for challenges |
+| `CERT_MODE` | `auto` | Certificate mode: `auto` (ACME) or `manual` (user-provided) |
+| `ACME_EMAIL` | Required (auto mode) | Email for ACME registration |
+| `ACME_DNS_PROVIDER` | `cf` | DNS provider for challenges (auto mode only) |
 
 ### DNS Provider Configuration
 
