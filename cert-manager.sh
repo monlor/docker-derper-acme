@@ -80,19 +80,31 @@ issue_certificate() {
 
     log "Issuing certificate for domain: ${domain}"
 
-    # Issue certificate using acme.sh with DNS provider (force issue)
+    # Remove incomplete ECC state if .cer is missing (issuance started but cert never received)
+    local ecc_dir="${ACME_HOME}/${domain}_ecc"
+    if [ -d "${ecc_dir}" ] && [ ! -f "${ecc_dir}/${domain}.cer" ]; then
+        log "Removing incomplete acme.sh ECC cert state: ${ecc_dir}"
+        rm -rf "${ecc_dir}"
+        # Also remove any stale installed cert files to keep state consistent
+        rm -f "${cert_file}" "${key_file}"
+        log "Removed stale cert files: ${cert_file}, ${key_file}"
+    fi
+
+    # Issue certificate using acme.sh with DNS provider (force issue, ECC key)
     log "Using DNS provider: ${ACME_DNS_PROVIDER}"
     "${ACME_SH}" --issue \
         --home "${ACME_HOME}" \
         -d "${domain}" \
         --dns "dns_${ACME_DNS_PROVIDER}" \
         --accountemail "${ACME_EMAIL}" \
+        --keylength ec-256 \
         --force
 
     # Install certificate to our certs directory
     "${ACME_SH}" --install-cert \
         --home "${ACME_HOME}" \
         -d "${domain}" \
+        --ecc \
         --cert-file "${cert_file}" \
         --key-file "${key_file}" \
         --fullchain-file "${cert_file}" \
