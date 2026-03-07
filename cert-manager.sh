@@ -100,6 +100,12 @@ issue_certificate() {
         --keylength ec-256 \
         --force
 
+    # Verify issuance actually succeeded before installing
+    if [ ! -f "${ecc_dir}/${domain}.cer" ]; then
+        log "ERROR: Certificate issuance failed, ${ecc_dir}/${domain}.cer not found"
+        return 1
+    fi
+
     # Install certificate to our certs directory
     "${ACME_SH}" --install-cert \
         --home "${ACME_HOME}" \
