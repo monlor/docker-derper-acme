@@ -31,6 +31,8 @@ ACME_EMAIL=your-email@example.com
 
 # For Cloudflare DNS
 ACME_DNS_PROVIDER=cf
+ACME_CA_SERVER=zerossl
+ACME_ISSUE_MAX_RETRIES=1
 CF_Token=your_cloudflare_api_token
 ```
 
@@ -92,6 +94,8 @@ docker-compose up -d
 | `CERT_MODE` | `auto` | Certificate mode: `auto` (ACME) or `manual` (user-provided) |
 | `ACME_EMAIL` | Required (auto mode) | Email for ACME registration |
 | `ACME_DNS_PROVIDER` | `cf` | DNS provider for challenges (auto mode only) |
+| `ACME_CA_SERVER` | `zerossl` | ACME CA server passed to `acme.sh --server` |
+| `ACME_ISSUE_MAX_RETRIES` | `1` | Retry count after a failed ACME issuance attempt |
 
 ### DNS Provider Configuration
 
@@ -102,6 +106,8 @@ Common examples:
 #### Cloudflare
 ```bash
 ACME_DNS_PROVIDER=cf
+ACME_CA_SERVER=zerossl
+ACME_ISSUE_MAX_RETRIES=1
 CF_Token=your_api_token
 CF_Account_ID=your_account_id  # Optional
 CF_Zone_ID=your_zone_id        # Optional

@@ -8,6 +8,8 @@ set -e
 CERT_DIR="${DERPER_CERT_DIR:-/app/acme/derper}"
 ACME_HOME="${ACME_HOME:-/app/acme}"
 ACME_SH="${ACME_HOME}/acme.sh"
+ACME_CA_SERVER="${ACME_CA_SERVER:-zerossl}"
+ACME_ISSUE_MAX_RETRIES="${ACME_ISSUE_MAX_RETRIES:-1}"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
@@ -31,6 +33,9 @@ init_acme() {
     # Create certs directory
     mkdir -p "${CERT_DIR}"
     log "Certificate directory ready: ${CERT_DIR}"
+
+    log "Using ACME CA server: ${ACME_CA_SERVER}"
+    "${ACME_SH}" --home "${ACME_HOME}" --set-default-ca --server "${ACME_CA_SERVER}"
 }
 
 check_acme_config() {
@@ -77,55 +82,65 @@ issue_certificate() {
     local domain="${1}"
     local cert_file="${CERT_DIR}/${domain}.crt"
     local key_file="${CERT_DIR}/${domain}.key"
-
-    log "Issuing certificate for domain: ${domain}"
-
-    # Remove incomplete ECC state if .cer is missing (issuance started but cert never received)
     local ecc_dir="${ACME_HOME}/${domain}_ecc"
-    if [ -d "${ecc_dir}" ] && [ ! -f "${ecc_dir}/${domain}.cer" ]; then
-        log "Removing incomplete acme.sh ECC cert state: ${ecc_dir}"
-        rm -rf "${ecc_dir}"
-        # Also remove any stale installed cert files to keep state consistent
-        rm -f "${cert_file}" "${key_file}"
-        log "Removed stale cert files: ${cert_file}, ${key_file}"
-    fi
+    local max_retries="${ACME_ISSUE_MAX_RETRIES}"
+    local total_attempts=$((max_retries + 1))
+    local attempt=1
 
-    # Issue certificate using acme.sh with DNS provider (force issue, ECC key)
-    log "Using DNS provider: ${ACME_DNS_PROVIDER}"
-    "${ACME_SH}" --issue \
-        --home "${ACME_HOME}" \
-        -d "${domain}" \
-        --dns "dns_${ACME_DNS_PROVIDER}" \
-        --accountemail "${ACME_EMAIL}" \
-        --keylength ec-256 \
-        --force
+    while [ "${attempt}" -le "${total_attempts}" ]; do
+        log "Issuing certificate for domain: ${domain} (attempt ${attempt}/${total_attempts})"
 
-    # Verify issuance actually succeeded before installing
-    if [ ! -f "${ecc_dir}/${domain}.cer" ]; then
-        log "ERROR: Certificate issuance failed, ${ecc_dir}/${domain}.cer not found"
-        return 1
-    fi
+        # Remove incomplete ECC state if .cer is missing (issuance started but cert never received)
+        if [ -d "${ecc_dir}" ] && [ ! -f "${ecc_dir}/${domain}.cer" ]; then
+            log "Removing incomplete acme.sh ECC cert state: ${ecc_dir}"
+            rm -rf "${ecc_dir}"
+            # Also remove any stale installed cert files to keep state consistent
+            rm -f "${cert_file}" "${key_file}"
+            log "Removed stale cert files: ${cert_file}, ${key_file}"
+        fi
 
-    # Install certificate to our certs directory
-    "${ACME_SH}" --install-cert \
-        --home "${ACME_HOME}" \
-        -d "${domain}" \
-        --ecc \
-        --cert-file "${cert_file}" \
-        --key-file "${key_file}" \
-        --fullchain-file "${cert_file}" \
-        --reloadcmd "echo 'Certificate installed for ${domain}'"
+        # Issue certificate using acme.sh with DNS provider (force issue, ECC key)
+        log "Using DNS provider: ${ACME_DNS_PROVIDER}"
+        log "Using ACME CA server: ${ACME_CA_SERVER}"
+        if ! "${ACME_SH}" --issue \
+            --home "${ACME_HOME}" \
+            -d "${domain}" \
+            --dns "dns_${ACME_DNS_PROVIDER}" \
+            --server "${ACME_CA_SERVER}" \
+            --accountemail "${ACME_EMAIL}" \
+            --keylength ec-256 \
+            --force; then
+            log "WARNING: acme.sh issue command failed on attempt ${attempt}/${total_attempts}"
+        elif [ ! -f "${ecc_dir}/${domain}.cer" ]; then
+            log "WARNING: Certificate issuance did not produce ${ecc_dir}/${domain}.cer on attempt ${attempt}/${total_attempts}"
+        elif ! "${ACME_SH}" --install-cert \
+            --home "${ACME_HOME}" \
+            -d "${domain}" \
+            --ecc \
+            --cert-file "${cert_file}" \
+            --key-file "${key_file}" \
+            --fullchain-file "${cert_file}" \
+            --reloadcmd "echo 'Certificate installed for ${domain}'"; then
+            log "WARNING: Failed to install certificate on attempt ${attempt}/${total_attempts}"
+        elif [ -f "${cert_file}" ] && [ -f "${key_file}" ]; then
+            log "Certificate successfully generated for ${domain}"
+            chmod 644 "${cert_file}"
+            chmod 600 "${key_file}"
+            return 0
+        else
+            log "WARNING: Certificate files were not written on attempt ${attempt}/${total_attempts}"
+        fi
 
-    if [ -f "${cert_file}" ] && [ -f "${key_file}" ]; then
-        log "Certificate successfully generated for ${domain}"
-        # Set proper permissions
-        chmod 644 "${cert_file}"
-        chmod 600 "${key_file}"
-        return 0
-    else
-        log "ERROR: Failed to generate certificate for ${domain}"
-        return 1
-    fi
+        if [ "${attempt}" -lt "${total_attempts}" ]; then
+            log "Retrying certificate issuance after failure"
+            sleep 5
+        fi
+
+        attempt=$((attempt + 1))
+    done
+
+    log "ERROR: Failed to generate certificate for ${domain} after ${total_attempts} attempt(s)"
+    return 1
 }
 
 get_certificate_expiry_date() {
